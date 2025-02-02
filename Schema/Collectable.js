@@ -1,25 +1,20 @@
 import mongoose from 'mongoose'
 import express from 'express'
-import collectable from "./Collectable.js";
+import req from "express/lib/request.js";
 
 const collectableSchema = new mongoose.Schema({
     name: { type: String, required: true },
     description: { type: String, required: true },
-    price: { type: Number, required: true },
+    price: { type: String, required: true },
 },{
     toJSON: {
         virtuals: true,
         versionKey: false,
         transform: (doc, ret) => {
-            ret._links = {
-                self: {
-                    href: ret._links.self.href,
-                },
-                collection: {
-                   href: ret._links.collection.href,
-                }
-            }
-            delete ret._id
+            ret._links = { self: { href: `${process.env.BASE_URL + ':' + process.env.EXPRESS_PORT}/items/${ret._id}` } ,
+                            collection: { href: `${process.env.BASE_URL + ':' + process.env.EXPRESS_PORT}/items/`}
+            };
+            delete ret._id;
         }
     }
 })

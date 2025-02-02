@@ -1,5 +1,6 @@
 import express from 'express';
 import Collectable from "./Schema/Collectable.js";
+import cors from "cors";
 import mongoose from 'mongoose';
 
 const router = express.Router();
@@ -8,22 +9,51 @@ router.use((req, res, next) => {
     next()
 })
 
+router.options('/', cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Origin, X-Requested-With, Content-Type, Accept']
+
+}), (req, res) => {
+    res.setHeader('Allow', 'GET, POST, OPTIONS');
+    res.sendStatus(200);
+})
+
+router.options('/:id', cors({
+    origin: '*',
+    methods: ['GET', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Origin, X-Requested-With, Content-Type, Accept']
+
+}), (req, res) => {
+    res.setHeader('Allow', 'GET, PUT, PATCH, DELETE, OPTIONS');
+    res.sendStatus(200);
+})
+
 router.get('/', async (req, res, next) => {
-    try {
-        const spots = await Collectable.find();
-        res.json(spots);
-    } catch (error) {
-        res.status(500).json({ message: 'Error fetching collectables', error });
-    }
+        try {
+            const collectables = await Collectable.find();
+
+            const response = {
+                items: collectables,
+                _links: {
+                    self: {href: `${req.protocol}://${req.get('host')}${req.originalUrl}`},
+                    collection: {href: `${req.protocol}://${req.get('host')}/items/`}
+                }
+            }
+
+            res.json(response);
+        } catch (error) {
+            res.status(500).json({message: 'Error fetching collectables', error});
+        }
 });
 
 router.get('/:id', async (req, res, next) => {
     try {
-        const spot = await Collectable.findById(req.params.id);
-        if (!spot) {
+        const collectable = await Collectable.findById(req.params.id);
+        if (!collectable) {
             return res.status(404).json({ message: 'Collectable not found' });
         }
-        res.json(spot);
+        res.json(collectable);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching collectable', error });
     }
@@ -31,46 +61,72 @@ router.get('/:id', async (req, res, next) => {
 
 router.post('/', async (req, res, next) => {
     try {
-        const newSpot = new Collectable(req.body);
-        const savedSpot = await newSpot.save();
-        res.status(201).json(savedSpot);
+        const newCollectable = new Collectable(req.body);
+        const savedCollectable = await newCollectable.save();
+        res.status(201).json(savedCollectable);
     } catch (error) {
-        res.status(400).json({ message: 'Error creating spot', error });
+        res.status(400).json({ message: 'Error creating collectable', error });
     }
 });
 
 router.delete('/:id', async (req, res, next) => {
     try {
-        if (!req.params.id) {
+        const collectable = await Collectable.findById(req.params.id);
+
+        if (!collectable) {
             return res.status(404).json({ message: 'Collectable not found' });
-        } else {
-            await Collectable.deleteOne({_id: req.params.id});
-            res.status(200).json({ message: 'Deleted collectable', spot: req.params.id });
         }
+
+        await collectable.deleteOne({_id: req.params.id});
+
+        res.status(204).json({ message: 'Deleted collectable', collectable: req.params.id });
+
     } catch (error) {
+
         res.status(500).json({ message: 'Error collectable', error });
+
     }
 });
 
 router.put('/:id', async (req, res, next) => {
     try {
-        if (!req.params.id) {
-            res.status(404).json({ message: 'Collectable not found' });
-        } else {
-            await Collectable.findByIdAndUpdate(req.params.id, req.body,
+        const { name, description, price } = req.body;
+
+        if (!name || !description || !price) {
+            return res.status(400).json({ message: 'Name, description, and price are required fields and cannot be empty' });
+        }
+
+            const updatedCollectable = await Collectable.findByIdAndUpdate(req.params.id, req.body,
                 {
                     new: true,
                     runValidators: true
                 });
-            res.status(200).json({ message: 'Updated collectable', spot: req.params.id });
-        }
+
+            if (!updatedCollectable) {
+                return res.status(404).json({ message: 'Collectable not found' });
+            }
+
+            res.status(200).json({ message: 'Updated collectable', collectable: updatedCollectable });
+
     } catch (error) {
         res.status(500).json({ message: 'Error updating collectable', error });
     }
 });
 
-router.post('/seed', async (req, res, next) => {
+router.delete('/reset', async (req, res, next) => {
+    try {
+        console.log('deleting all collectables and resetting database');
 
+        if(!mongoose.connection.readyState) {
+            console.log('Database not ready')
+        }
+        const result = await Collectable.deleteMany({});
+
+        res.status(200).json({ message: `deleted ${result.deletedCount} collectables` });
+    } catch (error) {
+        res.status(500).json({ message: 'Error deleting collectables', error });
+    }
 });
+
 
 export default router

@@ -21,17 +21,17 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use((req,res,next) => {
-    if (req.header('Accept') !== 'application/json') {
-        res.status(403).send('Not authorized');
-    } else {
-        next();
+app.use((req, res, next) => {
+    const acceptHeader = req.headers['accept'];
+    if (acceptHeader && !acceptHeader.includes('application/json')) {
+        return res.status(406).json({ error: 'Unsupported Accept header. Only application/json is allowed.' });
     }
-})
+    next();
+});
 
 //Routes
 app.use('/items', router)
-app.use('/items/seed', router)
+app.use('/items/reset', router)
 
 app.listen(process.env.EXPRESS_PORT, () => {
     console.log(`Listening on port ${process.env.EXPRESS_PORT}`);
