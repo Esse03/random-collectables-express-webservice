@@ -29,7 +29,11 @@ router.options('/:id', cors({
     res.sendStatus(200);
 })
 
-router.get('/', async (req, res, next) => {
+router.get('/', cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Origin, X-Requested-With, Content-Type, Accept'],
+}), async (req, res, next) => {
         try {
             const collectables = await Collectable.find();
 
@@ -47,7 +51,12 @@ router.get('/', async (req, res, next) => {
         }
 });
 
-router.get('/:id', async (req, res, next) => {
+router.get('/:id', cors({
+    origin: '*',
+    methods: ['GET', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Origin, X-Requested-With, Content-Type, Accept']
+
+}), async (req, res, next) => {
     try {
         const collectable = await Collectable.findById(req.params.id);
         if (!collectable) {
@@ -59,7 +68,11 @@ router.get('/:id', async (req, res, next) => {
     }
 });
 
-router.post('/', async (req, res, next) => {
+router.post('/', cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Origin, X-Requested-With, Content-Type, Accept'],
+}),async (req, res, next) => {
     try {
         const newCollectable = new Collectable(req.body);
         const savedCollectable = await newCollectable.save();
@@ -69,7 +82,12 @@ router.post('/', async (req, res, next) => {
     }
 });
 
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', cors({
+    origin: '*',
+    methods: ['GET', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Origin, X-Requested-With, Content-Type, Accept']
+
+}), async (req, res, next) => {
     try {
         const collectable = await Collectable.findById(req.params.id);
 
@@ -88,7 +106,12 @@ router.delete('/:id', async (req, res, next) => {
     }
 });
 
-router.put('/:id', async (req, res, next) => {
+router.put('/:id', cors({
+    origin: '*',
+    methods: ['GET', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Origin, X-Requested-With, Content-Type, Accept']
+
+}), async (req, res, next) => {
     try {
         const { name, description, price } = req.body;
 
