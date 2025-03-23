@@ -1,6 +1,5 @@
 import express from 'express';
 import Collectable from "./Schema/Collectable.js";
-import cors from "cors";
 import mongoose from 'mongoose';
 
 const router = express.Router();
@@ -9,54 +8,37 @@ router.use((req, res, next) => {
     next()
 })
 
-router.options('/', cors({
-    origin: '*',
-    methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Origin, X-Requested-With, Content-Type, Accept']
-
-}), (req, res) => {
+router.options('/', (req, res) => {
     res.setHeader('Allow', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
     res.sendStatus(200);
 })
 
-router.options('/:id', cors({
-    origin: '*',
-    methods: ['GET', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Origin, X-Requested-With, Content-Type, Accept']
-
-}), (req, res) => {
+router.options('/:id', (req, res) => {
     res.setHeader('Allow', 'GET, PUT, PATCH, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, PATCH, DELETE, OPTIONS')
     res.sendStatus(200);
 })
 
-router.get('/', cors({
-    origin: '*',
-    methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Origin, X-Requested-With, Content-Type, Accept'],
-}), async (req, res, next) => {
-        try {
-            const collectables = await Collectable.find();
+router.get('/', async (req, res, next) => {
+    try {
+        const collectables = await Collectable.find();
 
-            const response = {
-                items: collectables,
-                _links: {
-                    self: {href: `${req.protocol}://${req.get('host')}${req.originalUrl}`},
-                    collection: {href: `${req.protocol}://${req.get('host')}/items/`}
-                }
+        const response = {
+            items: collectables,
+            _links: {
+                self: {href: `${req.protocol}://${req.get('host')}${req.originalUrl}`},
+                collection: {href: `${req.protocol}://${req.get('host')}/items/`}
             }
-
-            res.json(response);
-        } catch (error) {
-            res.status(500).json({message: 'Error fetching collectables', error});
         }
+
+        res.json(response);
+    } catch (error) {
+        res.status(500).json({message: 'Error fetching collectables', error});
+    }
 });
 
-router.get('/:id', cors({
-    origin: '*',
-    methods: ['GET', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Origin, X-Requested-With, Content-Type, Accept']
-
-}), async (req, res, next) => {
+router.get('/:id', async (req, res, next) => {
     try {
         const collectable = await Collectable.findById(req.params.id);
         if (!collectable) {
@@ -68,11 +50,7 @@ router.get('/:id', cors({
     }
 });
 
-router.post('/', cors({
-    origin: '*',
-    methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Origin, X-Requested-With, Content-Type, Accept'],
-}),async (req, res, next) => {
+router.post('/',async (req, res, next) => {
     try {
         const newCollectable = new Collectable(req.body);
         const savedCollectable = await newCollectable.save();
@@ -82,12 +60,7 @@ router.post('/', cors({
     }
 });
 
-router.delete('/:id', cors({
-    origin: '*',
-    methods: ['GET', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Origin, X-Requested-With, Content-Type, Accept']
-
-}), async (req, res, next) => {
+router.delete('/:id', async (req, res, next) => {
     try {
         const collectable = await Collectable.findById(req.params.id);
 
@@ -106,12 +79,7 @@ router.delete('/:id', cors({
     }
 });
 
-router.put('/:id', cors({
-    origin: '*',
-    methods: ['GET', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Origin, X-Requested-With, Content-Type, Accept']
-
-}), async (req, res, next) => {
+router.put('/:id', async (req, res, next) => {
     try {
         const { name, description, price } = req.body;
 
@@ -119,17 +87,17 @@ router.put('/:id', cors({
             return res.status(400).json({ message: 'Name, description, and price are required fields and cannot be empty' });
         }
 
-            const updatedCollectable = await Collectable.findByIdAndUpdate(req.params.id, req.body,
-                {
-                    new: true,
-                    runValidators: true
-                });
+        const updatedCollectable = await Collectable.findByIdAndUpdate(req.params.id, req.body,
+            {
+                new: true,
+                runValidators: true
+            });
 
-            if (!updatedCollectable) {
-                return res.status(404).json({ message: 'Collectable not found' });
-            }
+        if (!updatedCollectable) {
+            return res.status(404).json({ message: 'Collectable not found' });
+        }
 
-            res.status(200).json({ message: 'Updated collectable', collectable: updatedCollectable });
+        res.status(200).json({ message: 'Updated collectable', collectable: updatedCollectable });
 
     } catch (error) {
         res.status(500).json({ message: 'Error updating collectable', error });

@@ -22,12 +22,39 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use((req, res, next) => {
-    const acceptHeader = req.headers['accept'];
-    if (acceptHeader && !acceptHeader.includes('application/json')) {
-        return res.status(406).json({ error: 'Unsupported Accept header. Only application/json is allowed.' });
+
+    //If the client did not specify it accepts JSON, send an error unless they only ask for options
+    if (!req.headers.accept?.includes('application/json') && req.method !== 'OPTIONS') {
+
+        res.status(406);
+        return res.json({error: 'This webservice only responds with JSON. Please specify if you will accept this format.'})
+
     }
+
+    //Otherwise just continue
     next();
+
 });
+
+app.use((req, res, next) => {
+
+    res.setHeader('Accept', 'application/json')
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Headers', 'Origin, Content-Type, Accept, Authorization, x-api-key');
+
+    next();
+
+});
+
+function errorHandler (err, req, res, next) {
+    console.error(err.stack);
+    res.status(500);
+
+    //Save the request to a log file
+    log(req, res, err);
+
+    return res.json({error: 'Internal server error'});
+}
 
 //Routes
 app.use('/items', router)
